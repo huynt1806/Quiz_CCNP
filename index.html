@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Game: Cisco ISE Master!</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #game-container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 30px;
+        }
+
+        #start-screen, #results-screen {
+             display: block; /* Start screen visible initially */
+        }
+        #quiz-screen{
+             display: none; /* Quiz hidden initially */
+        }
+
+
+        #question-container {
+            margin-bottom: 25px;
+        }
+
+        #question-text {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            min-height: 60px; /* Ensure space */
+             color: #444;
+        }
+
+        #answer-options {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column initially */
+            gap: 15px;
+        }
+
+        /* Grid layout for wider screens */
+         @media (min-width: 600px) {
+            #answer-options {
+                grid-template-columns: 1fr 1fr; /* Two columns on wider screens */
+            }
+         }
+
+
+        .option-btn {
+            background-color: #e9ecef;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            padding: 15px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            width: 100%; /* Ensure buttons take full grid cell width */
+             box-sizing: border-box;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #dde2e6;
+            border-color: #adb5bd;
+        }
+        .option-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+
+        .option-btn.correct {
+            background-color: #d4edda; /* Light green */
+            border-color: #c3e6cb;
+            color: #155724; /* Dark green */
+            font-weight: bold;
+        }
+
+        .option-btn.incorrect {
+            background-color: #f8d7da; /* Light red */
+            border-color: #f5c6cb;
+            color: #721c24; /* Dark red */
+        }
+         /* Style for the correct answer when shown after a wrong choice */
+        .option-btn.show-correct {
+            background-color: #d1ecf1; /* Light blue/info */
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #feedback-container {
+            margin-top: 25px;
+            min-height: 80px; /* Reserve space for feedback */
+             font-size: 0.95em;
+             line-height: 1.5;
+             color: #555;
+        }
+        #explanation {
+             font-style: italic;
+             margin-top: 10px;
+             color: #6c757d;
+        }
+
+        #progress-info {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #next-btn, #start-btn, #restart-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        #next-btn{
+             display: none; /* Hidden initially */
+        }
+
+
+        #start-btn:hover, #restart-btn:hover, #next-btn:hover {
+            background-color: #0056b3;
+        }
+        #start-btn:active, #restart-btn:active, #next-btn:active {
+             transform: scale(0.98);
+        }
+
+
+        #results-screen h2{
+             color: #28a745; /* Green for results */
+             margin-bottom: 20px;
+        }
+        #final-score-text{
+             font-size: 1.5em;
+             font-weight: bold;
+             margin-bottom: 30px;
+        }
+
+        /* Simple fade-in */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Cisco ISE Master Quiz!</h1>
+
+        <div id="start-screen">
+            <p>Bạn đã sẵn sàng kiểm tra kiến thức về Cisco ISE?</p>
+            <p>Trả lời 50 câu hỏi và xem bạn có phải là chuyên gia không nhé!</p>
+            <button id="start-btn">Bắt đầu!</button>
+            <button id="toggle-music-btn" style="margin-left: 10px; background-color: #6c757d;">Bật/Tắt Nhạc Nền</button>
+        </div>
+
+        <div id="quiz-screen">
+             <div id="progress-info">
+                <span id="question-counter"></span>
+                <span id="score-display">Điểm: 0</span>
+            </div>
+            <div id="question-container">
+                <p id="question-text"></p>
+            </div>
+            <div id="answer-options">
+                </div>
+            <div id="feedback-container">
+                 <p id="explanation"></p>
+            </div>
+            <button id="next-btn">Câu tiếp theo</button>
+        </div>
+
+         <div id="results-screen" style="display: none;">
+            <h2>Hoàn thành!</h2>
+            <p id="final-score-text"></p>
+            <p id="result-message"></p>
+            <button id="restart-btn">Chơi lại</button>
+        </div>
+    </div>
+
+    <audio id="correct-sound" src="correct.mp3" preload="auto"></audio>
+    <audio id="incorrect-sound" src="incorrect.mp3" preload="auto"></audio>
+    <audio id="background-music" src="background.mp3" loop preload="auto"></audio>
+
+
+    <script>
+        const quizData = [
+             // --- PASTE ALL 50 QUESTIONS FROM THE PREVIOUS RESPONSE HERE ---
+             // Example format:
+            {
+                 question: "1. Mục đích chính của Cisco ISE (Identity Services Engine) là gì?",
+                 options: [
+                     "Tăng tốc độ truy cập Internet",
+                     "Quản lý chính sách bảo mật và xác thực người dùng/thiết bị trong mạng",
+                     "Sao lưu dữ liệu máy chủ",
+                     "Phát hiện và loại bỏ virus trên máy tính"
+                 ],
+                 correctAnswer: 1,
+                 explanation: "Cisco ISE là nền tảng quản lý chính sách bảo mật và xác thực, giúp kiểm soát quyền truy cập vào tài nguyên mạng và đảm bảo an ninh."
+            },
+            {
+                 question: "2. Thành phần \"Identity\" (Danh tính) trong Cisco ISE dùng để làm gì?",
+                 options: [
+                     "Xác định vị trí địa lý của người dùng",
+                     "Xác định thời gian người dùng truy cập",
+                     "Xác định người dùng và thiết bị để cho phép truy cập mạng",
+                     "Xác định ứng dụng người dùng đang sử dụng"
+                 ],
+                 correctAnswer: 2,
+                 explanation: "Identity trong ISE dùng để xác định \"Ai là bạn?\", tức là xác minh danh tính người dùng hoặc thiết bị muốn kết nối."
+            },
+            {
+                 question: "3. Thành phần \"Context\" (Ngữ cảnh) trong Cisco ISE cung cấp thông tin gì?",
+                 options: [
+                     "Chỉ thông tin về hệ điều hành thiết bị",
+                     "Thông tin bổ sung như thời gian, vị trí, phương thức truy cập",
+                     "Chỉ thông tin về tên đăng nhập và mật khẩu",
+                     "Thông tin về cấu hình phần cứng của thiết bị"
+                 ],
+                 correctAnswer: 1,
+                 explanation: "Context cung cấp thông tin bổ sung về \"Khi nào, ở đâu, làm gì, và bằng cách nào\" người dùng/thiết bị truy cập mạng."
+            },
+            {
+                question: "4. Tính năng \"Posturing\" (Kiểm Tra Sức Khỏe Thiết Bị) của Cisco ISE nhằm mục đích gì?",
+                options: [
+                    "Phân loại loại thiết bị (ví dụ: điện thoại, máy tính)",
+                    "Kiểm tra tình trạng bảo mật của thiết bị trước khi cho phép truy cập",
+                    "Cấp quyền truy cập tạm thời cho khách",
+                    "Giám sát lưu lượng mạng"
+                ],
+                correctAnswer: 1,
+                explanation: "Posturing kiểm tra xem thiết bị có đáp ứng các tiêu chuẩn bảo mật (như antivirus, bản vá) hay không trước khi cho vào mạng."
+            },
+            {
+                question: "5. Ví dụ nào sau đây là một kiểm tra trong quá trình Posturing?",
+                options: [
+                    "Kiểm tra tên người dùng",
+                    "Kiểm tra vị trí truy cập",
+                    "Kiểm tra phiên bản antivirus hoặc bản cập nhật Windows",
+                    "Kiểm tra băng thông mạng"
+                ],
+                correctAnswer: 2,
+                explanation: "Posturing có thể bao gồm việc kiểm tra antivirus, bản cập nhật Windows, hoặc các bản vá bảo mật trên thiết bị."
+            },
+            {
+                question: "6. Tính năng \"Profiling\" (Lập Hồ Sơ Thiết Bị) của Cisco ISE giúp làm gì?",
+                options: [
+                    "Đo lường hiệu suất mạng",
+                    "Xác định và phân loại các thiết bị kết nối vào mạng",
+                    "Đặt lại mật khẩu người dùng",
+                    "Sao lưu cấu hình mạng"
+                ],
+                correctAnswer: 1,
+                explanation: "Profiling giúp ISE xác định loại thiết bị (ví dụ: hệ điều hành, nhà sản xuất) đang kết nối để áp dụng chính sách phù hợp."
+            },
+            {
+                question: "7. Cisco ISE hỗ trợ \"Bring Your Own Device\" (BYOD) nghĩa là gì?",
+                options: [
+                    "Cho phép nhân viên mang thiết bị cá nhân kết nối vào mạng công ty một cách an toàn",
+                    "Chỉ cho phép thiết bị do công ty cấp được kết nối",
+                    "Chặn tất cả các thiết bị cá nhân",
+                    "Yêu cầu nhân viên mua thiết bị mới"
+                ],
+                correctAnswer: 0,
+                explanation: "Tính năng BYOD của ISE cho phép quản lý và bảo mật việc kết nối các thiết bị cá nhân (điện thoại, laptop) vào mạng doanh nghiệp."
+            },
+            {
+                question: "8. Lợi ích của việc Cisco ISE cung cấp \"Quản Lý Chính Sách Trung Tâm\" là gì?",
+                options: [
+                    "Mỗi thiết bị mạng có chính sách riêng biệt hoàn toàn",
+                    "Áp dụng chính sách bảo mật nhất quán cho cả mạng có dây và không dây từ một điểm",
+                    "Chỉ quản lý chính sách cho mạng không dây",
+                    "Yêu cầu cấu hình chính sách thủ công trên từng switch"
+                ],
+                correctAnswer: 1,
+                explanation: "ISE đóng vai trò là nền tảng quản lý chính sách tập trung, giúp áp dụng chính sách đồng bộ trên toàn mạng (có dây và không dây)."
+            },
+            {
+                question: "9. Cisco ISE có thể làm gì khi phát hiện một thiết bị bị nhiễm malware hoặc có lỗ hổng?",
+                options: [
+                    "Tự động cài đặt phần mềm diệt virus",
+                    "Gửi cảnh báo đến nhà cung cấp Internet",
+                    "Thay đổi cấp độ truy cập hoặc chuyển thiết bị vào VLAN an toàn hơn",
+                    "Tắt nguồn thiết bị từ xa"
+                ],
+                correctAnswer: 2,
+                explanation: "ISE có thể giảm thiểu mối đe dọa bằng cách cách ly thiết bị bị xâm phạm hoặc hạn chế quyền truy cập của nó."
+            },
+            {
+                question: "10. \"Identity Store\" (Kho Lưu Trữ Danh Tính) trong Cisco ISE là gì?",
+                options: [
+                    "Nơi lưu trữ log hệ thống",
+                    "Nơi lưu trữ thông tin danh tính người dùng hoặc thiết bị",
+                    "Nơi lưu trữ cấu hình của ISE",
+                    "Nơi lưu trữ các bản vá bảo mật"
+                ],
+                correctAnswer: 1,
+                explanation: "Identity Store là cơ sở dữ liệu chứa thông tin xác thực (như tên người dùng, mật khẩu, chứng chỉ) của người dùng và thiết bị."
+            },
+            {
+                question: "11. Ví dụ nào sau đây là một \"External Identity Store\" (Kho Lưu Trữ Danh Tính Ngoài)?",
+                options: [
+                    "Cơ sở dữ liệu nội bộ của ISE",
+                    "Active Directory hoặc LDAP",
+                    "Một file text trên máy chủ ISE",
+                    "Bộ nhớ cache của trình duyệt"
+                ],
+                correctAnswer: 1,
+                explanation: "External Identity Store là các hệ thống quản lý danh tính bên ngoài mà ISE có thể tích hợp, ví dụ như Active Directory, LDAP, RADIUS server khác."
+            },
+            {
+                question: "12. \"Node\" (Nút) trong ngữ cảnh Cisco ISE đề cập đến điều gì?",
+                options: [
+                    "Một người dùng cuối",
+                    "Một chính sách bảo mật cụ thể",
+                    "Một thiết bị Cisco vật lý hoặc ảo chạy phần mềm ISE",
+                    "Một cổng trên switch mạng"
+                ],
+                correctAnswer: 2,
+                explanation: "Node là một thực thể máy chủ (vật lý hoặc ảo) được cài đặt và chạy phần mềm Cisco ISE."
+            },
+            {
+                question: "13. \"Persona\" (Nhân Vật) trong Cisco ISE đại diện cho cái gì?",
+                options: [
+                    "Loại giấy phép ISE đang sử dụng",
+                    "Một nhóm người dùng cụ thể",
+                    "Các dịch vụ hoặc vai trò chức năng mà một Node ISE cung cấp",
+                    "Giao diện người dùng của ISE"
+                ],
+                correctAnswer: 2,
+                explanation: "Persona xác định vai trò hoặc chức năng mà một Node ISE đảm nhiệm trong hệ thống (ví dụ: quản lý, thực thi chính sách, giám sát)."
+            },
+            {
+                question: "14. Ba Persona chính của Cisco ISE là gì?",
+                options: [
+                    "Admin, User, Guest",
+                    "Firewall, Switch, Router",
+                    "Administration, Policy Service, Monitoring",
+                    "Primary, Secondary, Backup"
+                ],
+                correctAnswer: 2,
+                explanation: "Ba persona chính định nghĩa các chức năng cốt lõi của ISE là Administration (Quản lý), Policy Service (Dịch vụ Chính sách), và Monitoring (Giám sát)."
+            },
+            {
+                question: "15. Chức năng chính của Administration Persona là gì?",
+                options: [
+                    "Áp dụng chính sách xác thực cho người dùng",
+                    "Giám sát và báo cáo sự kiện hệ thống",
+                    "Quản lý cấu hình chung, chính sách, giấy phép, backup/restore của ISE",
+                    "Xác thực các thiết bị đầu cuối"
+                ],
+                correctAnswer: 2,
+                explanation: "Policy Administration Node (PAN) là nơi thực hiện các tác vụ quản trị hệ thống ISE như cấu hình, quản lý định danh, giấy phép, bảo trì."
+            },
+            {
+                question: "16. Chức năng chính của Policy Service Persona là gì?",
+                options: [
+                    "Thu thập và lưu trữ log",
+                    "Xử lý và áp dụng các chính sách bảo mật (xác thực, ủy quyền, posturing, profiling)",
+                    "Quản lý giấy phép ISE",
+                    "Cập nhật phần mềm ISE"
+                ],
+                correctAnswer: 1,
+                explanation: "Policy Service Node (PSN) là persona tương tác trực tiếp với các thiết bị mạng và người dùng để thực thi các chính sách bảo mật."
+            },
+            {
+                question: "17. Chức năng chính của Monitoring Persona là gì?",
+                options: [
+                    "Cấu hình chính sách bảo mật",
+                    "Xác thực người dùng VPN",
+                    "Giám sát, thu thập log, và báo cáo về hoạt động của hệ thống và mạng",
+                    "Cấp phát địa chỉ IP"
+                ],
+                correctAnswer: 2,
+                explanation: "Monitoring Node (MNT) chịu trách nhiệm thu thập, tổng hợp log và cung cấp khả năng giám sát, báo cáo, khắc phục sự cố."
+            },
+            {
+                question: "18. \"Application Server\" trong Cisco ISE là gì?",
+                options: [
+                    "Một máy chủ web công cộng",
+                    "Máy chủ nơi các dịch vụ (personas) của Cisco ISE được chạy",
+                    "Máy chủ lưu trữ file chia sẻ",
+                    "Máy chủ quản lý tên miền (DNS)"
+                ],
+                correctAnswer: 1,
+                explanation: "Application Server là nền tảng mà trên đó các persona của ISE hoạt động để cung cấp các dịch vụ quản lý và bảo mật."
+            },
+            {
+                question: "19. Tab nào trong giao diện ISE thường được liên kết với chức năng của Monitoring Node?",
+                options: [
+                    "Policy Tab",
+                    "Administration Tab",
+                    "Operation Tab",
+                    "Work Centers Tab"
+                ],
+                correctAnswer: 2,
+                explanation: "Monitoring Node được gọi là \"Operation Tab\", nơi quản trị viên có thể xem log, báo cáo và trạng thái hệ thống."
+            },
+            {
+                question: "20. Persona nào chịu trách nhiệm xử lý các yêu cầu xác thực (authentication), ủy quyền (authorization), posturing, và profiling?",
+                options: [
+                    "Monitoring Persona",
+                    "Administration Persona",
+                    "Policy Service Persona",
+                    "Backup Persona"
+                ],
+                correctAnswer: 2,
+                explanation: "Policy Service Node (PSN) là persona thực hiện các chức năng cốt lõi liên quan đến việc xử lý yêu cầu truy cập và áp dụng chính sách."
+            },
+            {
+                question: "21. Việc quản lý licensing, bảo trì (maintenance), và backup/restore được thực hiện thông qua Persona nào?",
+                options: [
+                    "Policy Service Persona",
+                    "Monitoring Persona",
+                    "Client Provisioning Persona",
+                    "Policy Administration Persona"
+                ],
+                correctAnswer: 3,
+                explanation: "Policy Administration Node (PAN) là nơi quản lý các khía cạnh vận hành và cấu hình hệ thống ISE, bao gồm licensing, maintenance, backup/restore."
+            },
+            {
+                question: "22. Trong một triển khai Cisco ISE, các Persona có thể được cấu hình như thế nào?",
+                options: [
+                    "Chỉ có thể chạy mỗi Persona trên một Node riêng biệt",
+                    "Tất cả các Persona phải chạy trên cùng một Node",
+                    "Có thể chạy cả ba Persona trên một Node hoặc chia ra trên các Node khác nhau",
+                    "Chỉ có thể kết hợp Administration và Monitoring Persona"
+                ],
+                correctAnswer: 2,
+                explanation: "ISE linh hoạt trong triển khai, cho phép gộp cả 3 persona trên một node (standalone) hoặc tách riêng từng persona ra các node khác nhau (distributed)."
+            },
+            {
+                question: "23. Mô hình \"Standalone Deployment\" (Triển khai Đơn Lẻ) của Cisco ISE có đặc điểm gì?",
+                options: [
+                    "Sử dụng nhiều Node, mỗi Node một Persona",
+                    "Sử dụng hai Node để dự phòng",
+                    "Chỉ sử dụng một Node duy nhất đảm nhiệm cả ba Persona",
+                    "Yêu cầu kết nối Internet tốc độ cao"
+                ],
+                correctAnswer: 2,
+                explanation: "Trong mô hình Standalone, một thiết bị ISE duy nhất thực hiện tất cả các chức năng của cả ba persona (Administration, Monitoring, Policy Service)."
+            },
+            {
+                question: "24. Hạn chế chính của mô hình Standalone Deployment là gì?",
+                options: [
+                    "Chi phí triển khai cao",
+                    "Cấu hình phức tạp",
+                    "Không có dự phòng (redundancy), dễ bị ảnh hưởng khi Node duy nhất gặp sự cố",
+                    "Chỉ hỗ trợ mạng có dây"
+                ],
+                correctAnswer: 2,
+                explanation: "Vì chỉ có một node, nếu node đó lỗi thì toàn bộ dịch vụ ISE sẽ ngừng hoạt động. Mô hình này thiếu tính sẵn sàng cao."
+            },
+            {
+                question: "25. Mô hình \"Distributed Deployment\" (Triển khai Phân Tán) thường bao gồm bao nhiêu Node và phân chia Persona như thế nào (ví dụ cơ bản)?",
+                options: [
+                    "Một Node duy nhất",
+                    "Hai Node, một Node làm PAN/MNT, Node kia làm PSN (hoặc phân chia khác)",
+                    "Bốn Node, mỗi Node một vai trò chính/phụ riêng",
+                    "Chỉ sử dụng các Node PSN"
+                ],
+                correctAnswer: 1,
+                explanation: "Triển khai phân tán cơ bản thường dùng ít nhất hai node để tách biệt các persona, ví dụ một node làm PAN (chính) và MNT (phụ), node còn lại làm PSN và MNT (chính). Điều này cung cấp dự phòng cơ bản."
+            },
+            {
+                question: "26. Lợi ích chính của Distributed Deployment so với Standalone Deployment là gì?",
+                options: [
+                    "Triển khai đơn giản hơn",
+                    "Chi phí thấp hơn",
+                    "Cung cấp khả năng dự phòng (redundancy)",
+                    "Không yêu cầu giấy phép"
+                ],
+                correctAnswer: 2,
+                explanation: "Việc có nhiều node cho phép hệ thống tiếp tục hoạt động nếu một node gặp sự cố, tăng tính sẵn sàng và độ tin cậy."
+            },
+            {
+                question: "27. Mô hình \"Four-Node Deployment\" thường có cấu trúc phân chia Persona như thế nào?",
+                options: [
+                    "Tất cả 4 Node đều là PSN",
+                    "1 PAN, 1 MNT, 2 PSN",
+                    "2 Node làm PAN (Primary/Secondary), 2 Node làm MNT (Primary/Secondary)",
+                    "1 Node PAN/MNT chính, 1 Node PAN/MNT phụ, 2 Node PSN hoạt động song song"
+                ],
+                correctAnswer: 3,
+                explanation: "Mô hình 4 node thường thiết lập dự phòng cho cả PAN và MNT (ví dụ: node 1 làm PAN chính/MNT phụ, node 2 làm PAN phụ/MNT chính) và có 2 node PSN để cân bằng tải và dự phòng."
+            },
+            {
+                question: "28. Lợi ích chính của mô hình Four-Node Deployment là gì?",
+                options: [
+                    "Đơn giản nhất để cấu hình",
+                    "Chi phí thấp nhất",
+                    "Cung cấp dự phòng hoàn chỉnh và tính khả dụng cao cho tổ chức lớn",
+                    "Chỉ cần một loại giấy phép duy nhất"
+                ],
+                correctAnswer: 2,
+                explanation: "Mô hình này cung cấp mức độ dự phòng cao cho tất cả các persona quan trọng, phù hợp với các tổ chức lớn yêu cầu độ ổn định cao."
+            },
+            {
+                question: "29. Mô hình \"Fully Distributed Deployment\" (Triển khai Phân Tán Hoàn Toàn) có đặc điểm gì?",
+                options: [
+                    "Gộp tất cả Persona vào một Node ảo",
+                    "Mỗi Persona (PAN, MNT, PSN) được triển khai trên các Node riêng biệt, thường có dự phòng cho từng loại",
+                    "Chỉ sử dụng Node vật lý, không dùng Node ảo",
+                    "Là tên gọi khác của Standalone Deployment"
+                ],
+                correctAnswer: 1,
+                explanation: "Đây là mô hình phân tán tối đa, nơi mỗi chức năng chính (Admin, Monitor, Policy Service) chạy trên các node chuyên dụng, thường có cả node chính và phụ cho từng chức năng."
+            },
+            {
+                question: "30. Mô hình Fully Distributed Deployment phù hợp nhất với loại hình tổ chức nào?",
+                options: [
+                    "Tổ chức rất nhỏ hoặc phòng thí nghiệm",
+                    "Tổ chức vừa với yêu cầu dự phòng cơ bản",
+                    "Tổ chức rất lớn với yêu cầu bảo mật, khả năng mở rộng và tính sẵn sàng rất cao",
+                    "Tổ chức không sử dụng thiết bị Cisco"
+                ],
+                correctAnswer: 2,
+                explanation: "Mô hình này cung cấp khả năng mở rộng và độ tin cậy cao nhất, phù hợp với các doanh nghiệp, tổ chức quy mô lớn có yêu cầu khắt khe về bảo mật và hiệu năng."
+            },
+            {
+                question: "31. \"Device Administration\" trong ngữ cảnh Cisco ISE nghĩa là gì?",
+                options: [
+                    "Quản lý việc cấp phát địa chỉ IP cho thiết bị",
+                    "Quản lý việc xác thực người dùng truy cập vào mạng Wi-Fi",
+                    "Quản lý cấu hình và truy cập vào các thiết bị mạng (router, switch, firewall) từ xa",
+                    "Quản lý việc cập nhật phần mềm trên máy tính người dùng"
+                ],
+                correctAnswer: 2,
+                explanation: "Device Administration liên quan đến việc kiểm soát ai có thể đăng nhập và cấu hình các thiết bị hạ tầng mạng như router, switch, firewall."
+            },
+            {
+                question: "32. Cisco ISE giải quyết thách thức quản lý truy cập thiết bị trong các tổ chức lớn như thế nào?",
+                options: [
+                    "Yêu cầu mỗi quản trị viên nhớ mật khẩu của từng thiết bị",
+                    "Cung cấp một điểm quản lý trung tâm cho tài khoản và quyền truy cập, thay vì cấu hình trên từng thiết bị",
+                    "Tự động thay đổi cấu hình thiết bị hàng ngày",
+                    "Loại bỏ hoàn toàn nhu cầu quản trị thiết bị"
+                ],
+                correctAnswer: 1,
+                explanation: "Thay vì tạo tài khoản trên hàng trăm thiết bị, quản trị viên chỉ cần tạo tài khoản và phân quyền trên ISE. ISE sẽ xử lý việc xác thực và ủy quyền khi quản trị viên truy cập thiết bị."
+            },
+            {
+                question: "33. \"Local Privileges Authorization Fallback\" được sử dụng khi nào?",
+                options: [
+                    "Khi người dùng quên mật khẩu",
+                    "Khi Cisco ISE hoạt động bình thường",
+                    "Khi Cisco ISE không khả dụng (bị lỗi hoặc mất kết nối) để đảm bảo vẫn truy cập được thiết bị mạng",
+                    "Khi cần nâng cấp phiên bản ISE"
+                ],
+                correctAnswer: 2,
+                explanation: "Đây là cơ chế dự phòng, sử dụng tài khoản được cấu hình cục bộ trên thiết bị mạng (router, switch) để đăng nhập khi không thể liên lạc với máy chủ ISE."
+            },
+            {
+                question: "34. Chức năng \"Network Access\" của Cisco ISE đảm bảo điều gì?",
+                options: [
+                    "Tốc độ mạng luôn ở mức cao nhất",
+                    "Người dùng và thiết bị được xác thực và cấp quyền phù hợp trước khi truy cập tài nguyên mạng",
+                    "Tất cả các trang web đều có thể truy cập được",
+                    "Sao lưu tự động cấu hình mạng"
+                ],
+                correctAnswer: 1,
+                explanation: "Network Access là quá trình ISE xác thực danh tính người dùng/thiết bị và áp dụng các chính sách để quyết định họ được phép truy cập những gì trong mạng."
+            },
+            {
+                question: "35. Giao thức nào sau đây là giao thức Triple-A (AAA) độc quyền của Cisco, thường dùng cho Device Administration?",
+                options: [
+                    "RADIUS",
+                    "TACACS+",
+                    "LDAP",
+                    "SNMP"
+                ],
+                correctAnswer: 1,
+                explanation: "TACACS+ là giao thức do Cisco phát triển, chủ yếu được sử dụng để quản lý truy cập vào các thiết bị mạng Cisco."
+            },
+            {
+                question: "36. Ưu điểm bảo mật chính của TACACS+ so với RADIUS là gì?",
+                options: [
+                    "Sử dụng cổng UDP nhanh hơn",
+                    "Mã hóa toàn bộ gói dữ liệu AAA",
+                    "Là giao thức mở, tương thích nhiều hãng",
+                    "Chỉ mã hóa mật khẩu"
+                ],
+                correctAnswer: 1,
+                explanation: "TACACS+ mã hóa toàn bộ nội dung của gói tin AAA (bao gồm tên người dùng, mật khẩu và dữ liệu khác), trong khi RADIUS mặc định chỉ mã hóa mật khẩu."
+            },
+            {
+                question: "37. TACACS+ sử dụng giao thức vận chuyển nào?",
+                options: [
+                    "UDP",
+                    "TCP",
+                    "ICMP",
+                    "ARP"
+                ],
+                correctAnswer: 1,
+                explanation: "TACACS+ sử dụng TCP (Transmission Control Protocol) làm giao thức vận chuyển, đảm bảo việc truyền dữ liệu đáng tin cậy hơn."
+            },
+            {
+                question: "38. RADIUS sử dụng giao thức vận chuyển nào?",
+                options: [
+                    "TCP",
+                    "UDP",
+                    "SCTP",
+                    "HTTP"
+                ],
+                correctAnswer: 1,
+                explanation: "RADIUS sử dụng UDP (User Datagram Protocol) làm giao thức vận chuyển, giúp truyền tải nhanh hơn nhưng kém tin cậy hơn TCP."
+            },
+            {
+                question: "39. Trường hợp sử dụng chính của TACACS+ là gì?",
+                options: [
+                    "Xác thực người dùng Wi-Fi",
+                    "Quản lý truy cập và cấu hình thiết bị mạng (Device Administration)",
+                    "Cấp phát địa chỉ IP (DHCP)",
+                    "Phân giải tên miền (DNS)"
+                ],
+                correctAnswer: 1,
+                explanation: "Do khả năng kiểm soát chi tiết và mã hóa toàn bộ, TACACS+ rất phù hợp cho việc quản lý ai được phép làm gì trên các thiết bị mạng Cisco."
+            },
+            {
+                question: "40. Trường hợp sử dụng chính của RADIUS là gì?",
+                options: [
+                    "Quản lý cấu hình firewall Cisco",
+                    "Sao lưu cấu hình switch Cisco",
+                    "Xác thực truy cập mạng (Network Access) như Wi-Fi, VPN",
+                    "Giám sát hiệu năng router Cisco"
+                ],
+                correctAnswer: 2,
+                explanation: "RADIUS là chuẩn công nghiệp được sử dụng rộng rãi để xác thực người dùng khi họ kết nối vào mạng, đặc biệt là mạng không dây và VPN, và hỗ trợ thiết bị đa hãng."
+            },
+            {
+                question: "41. Giao thức AAA nào chỉ mã hóa mật khẩu trong gói tin?",
+                options: [
+                    "TACACS+",
+                    "RADIUS",
+                    "Kerberos",
+                    "EAP"
+                ],
+                correctAnswer: 1,
+                explanation: "Một trong những hạn chế của RADIUS là chỉ mã hóa trường mật khẩu, các thông tin khác như tên người dùng, thuộc tính được gửi dưới dạng rõ."
+            },
+            {
+                question: "42. Giao thức AAA nào tách biệt rõ ràng ba chức năng Authentication, Authorization, và Accounting?",
+                options: [
+                    "RADIUS",
+                    "TACACS+",
+                    "PPP",
+                    "SLIP"
+                ],
+                correctAnswer: 1,
+                explanation: "TACACS+ xử lý từng thành phần AAA (xác thực, ủy quyền, ghi nhận) như các giao dịch riêng biệt, mang lại sự linh hoạt và kiểm soát chi tiết hơn. RADIUS thường gộp Authentication và Authorization."
+            },
+            {
+                question: "43. AAA là viết tắt của cụm từ nào?",
+                options: [
+                    "Access, Administration, Accounting",
+                    "Authentication, Authorization, Accounting",
+                    "Asset, Authentication, Administration",
+                    "Access, Authorization, Audit"
+                ],
+                correctAnswer: 1,
+                explanation: "AAA là một framework bảo mật bao gồm ba thành phần: Authentication (Xác thực - bạn là ai?), Authorization (Ủy quyền - bạn được làm gì?), và Accounting (Ghi nhận - bạn đã làm gì?)."
+            },
+            {
+                question: "44. 802.1X là gì?",
+                options: [
+                    "Một chuẩn cáp mạng",
+                    "Một giao thức mã hóa Wi-Fi",
+                    "Một chuẩn xác thực mạng dựa trên cổng (port-based authentication)",
+                    "Một thuật toán định tuyến"
+                ],
+                correctAnswer: 2,
+                explanation: "802.1X là một tiêu chuẩn của IEEE định nghĩa cơ chế kiểm soát truy cập mạng dựa trên cổng, yêu cầu xác thực trước khi cấp quyền truy cập đầy đủ."
+            },
+            {
+                question: "45. Ba thành phần chính tham gia vào quá trình xác thực 802.1X là gì?",
+                options: [
+                    "Router, Firewall, Server",
+                    "Supplicant, Authenticator, Authentication Server",
+                    "Client, Switch, Access Point",
+                    "User, Password, Certificate"
+                ],
+                correctAnswer: 1,
+                explanation: "Quá trình 802.1X liên quan đến ba vai trò: Supplicant (thiết bị/người dùng cần xác thực), Authenticator (thiết bị mạng trung gian như switch/AP), và Authentication Server (máy chủ xử lý xác thực như ISE)."
+            },
+            {
+                question: "46. \"Supplicant\" trong 802.1X là gì?",
+                options: [
+                    "Máy chủ xác thực (như Cisco ISE)",
+                    "Thiết bị mạng trung gian (như switch, AP)",
+                    "Thiết bị hoặc phần mềm trên máy người dùng cuối muốn kết nối vào mạng",
+                    "Người quản trị mạng"
+                ],
+                correctAnswer: 2,
+                explanation: "Supplicant là thiết bị hoặc người dùng cuối (ví dụ: máy tính, điện thoại) cần được xác thực để truy cập mạng."
+            },
+            {
+                question: "47. \"Authenticator\" trong 802.1X thường là thiết bị nào?",
+                options: [
+                    "Máy tính của người dùng",
+                    "Máy chủ Cisco ISE",
+                    "Switch mạng, Access Point (AP), hoặc Wireless LAN Controller (WLC)",
+                    "Máy chủ Active Directory"
+                ],
+                correctAnswer: 2,
+                explanation: "Authenticator là thiết bị mạng hoạt động như một cổng kiểm soát, chuyển tiếp yêu cầu xác thực giữa Supplicant và Authentication Server."
+            },
+            {
+                question: "48. \"Authentication Server\" trong 802.1X có vai trò gì?",
+                options: [
+                    "Cung cấp kết nối vật lý cho người dùng",
+                    "Chuyển tiếp yêu cầu xác thực",
+                    "Kiểm tra thông tin xác thực (ví dụ: tên người dùng/mật khẩu, chứng chỉ) và quyết định cấp quyền truy cập",
+                    "Lưu trữ dữ liệu người dùng"
+                ],
+                correctAnswer: 2,
+                explanation: "Authentication Server (thường là một máy chủ RADIUS như Cisco ISE) chịu trách nhiệm xác minh danh tính của Supplicant dựa trên thông tin được cung cấp và cơ sở dữ liệu danh tính."
+            },
+            {
+                question: "49. Giao thức nào thường được sử dụng để đóng gói và vận chuyển thông tin xác thực giữa Supplicant và Authentication Server qua Authenticator trong 802.1X?",
+                options: [
+                    "TCP",
+                    "HTTP",
+                    "EAP (Extensible Authentication Protocol)",
+                    "SNMP"
+                ],
+                correctAnswer: 2,
+                explanation: "EAP là một framework giao thức được sử dụng để mang thông tin xác thực giữa các bên trong quá trình 802.1X. EAP được đóng gói trong các giao thức khác như EAP over LAN (EAPoL) hoặc EAP over RADIUS."
+            },
+            {
+                question: "50. Lợi ích chính của việc sử dụng 802.1X là gì?",
+                options: [
+                    "Tăng tốc độ truyền dữ liệu",
+                    "Cải thiện bảo mật mạng bằng cách yêu cầu xác thực trước khi cấp quyền truy cập",
+                    "Đơn giản hóa việc cấu hình địa chỉ IP",
+                    "Giảm chi phí mua thiết bị mạng"
+                ],
+                correctAnswer: 1,
+                explanation: "802.1X tăng cường bảo mật bằng cách đảm bảo chỉ những người dùng và thiết bị hợp lệ, đã được xác thực mới có thể kết nối và truy cập vào tài nguyên mạng."
+            }
+             // --- END OF QUESTIONS ---
+        ];
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+
+        const startBtn = document.getElementById('start-btn');
+        const questionCounter = document.getElementById('question-counter');
+        const scoreDisplay = document.getElementById('score-display');
+        const questionText = document.getElementById('question-text');
+        const answerOptionsContainer = document.getElementById('answer-options');
+        const explanationText = document.getElementById('explanation');
+        const nextBtn = document.getElementById('next-btn');
+        const finalScoreText = document.getElementById('final-score-text');
+        const resultMessage = document.getElementById('result-message');
+        const restartBtn = document.getElementById('restart-btn');
+        const toggleMusicBtn = document.getElementById('toggle-music-btn');
+
+
+        const correctSound = document.getElementById('correct-sound');
+        const incorrectSound = document.getElementById('incorrect-sound');
+        const backgroundMusic = document.getElementById('background-music');
+
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let shuffledQuestions = [];
+        let musicEnabled = false;
+
+         function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+            return array;
+         }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            resultsScreen.style.display = 'none';
+            quizScreen.style.display = 'block';
+            quizScreen.classList.add('fade-in');
+
+
+            shuffledQuestions = shuffleArray([...quizData]); // Shuffle questions
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreDisplay.textContent = `Điểm: ${score}`;
+            nextBtn.style.display = 'none';
+             explanationText.textContent = ''; // Clear previous explanation
+            loadQuestion();
+
+             if (musicEnabled) {
+                 backgroundMusic.play().catch(e => console.log("Autoplay prevented")); // Attempt to play music
+             }
+        }
+
+        function loadQuestion() {
+             resetStyles();
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            questionCounter.textContent = `Câu ${currentQuestionIndex + 1} / ${shuffledQuestions.length}`;
+            questionText.textContent = currentQuestion.question;
+             answerOptionsContainer.innerHTML = ''; // Clear previous options
+             explanationText.textContent = ''; // Clear explanation
+             nextBtn.style.display = 'none'; // Hide next button
+
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-btn');
+                 button.dataset.index = index; // Store the original index as data attribute
+                button.addEventListener('click', selectAnswer);
+                answerOptionsContainer.appendChild(button);
+            });
+             // Add fade-in effect for the new question elements if desired
+             questionText.classList.add('fade-in');
+             answerOptionsContainer.classList.add('fade-in');
+             setTimeout(() => {
+                 questionText.classList.remove('fade-in');
+                 answerOptionsContainer.classList.remove('fade-in');
+             }, 500); // Match CSS animation duration
+        }
+
+         function resetStyles() {
+             // Remove previous result styles from buttons if any (though clearing innerHTML should handle this)
+             // If you weren't clearing innerHTML, you'd loop through buttons and remove classes here.
+             explanationText.textContent = ''; // Clear explanation
+         }
+
+
+        function selectAnswer(e) {
+             const selectedButton = e.target;
+             const selectedAnswerIndex = parseInt(selectedButton.dataset.index);
+             const currentQuestion = shuffledQuestions[currentQuestionIndex];
+             const correctAnswerIndex = currentQuestion.correctAnswer;
+
+             // Disable all buttons after selection
+             Array.from(answerOptionsContainer.children).forEach(btn => {
+                 btn.disabled = true;
+                  // Remove hover effects if needed
+             });
+
+             if (selectedAnswerIndex === correctAnswerIndex) {
+                 score++;
+                 scoreDisplay.textContent = `Điểm: ${score}`;
+                 selectedButton.classList.add('correct');
+                 playSound(correctSound);
+                 explanationText.textContent = "Chính xác! " + currentQuestion.explanation;
+                 explanationText.style.color = '#155724'; // Dark Green
+             } else {
+                 selectedButton.classList.add('incorrect');
+                 playSound(incorrectSound);
+                 // Highlight the correct answer
+                 const correctButton = answerOptionsContainer.querySelector(`[data-index="${correctAnswerIndex}"]`);
+                 if(correctButton) {
+                     correctButton.classList.add('show-correct'); // Or 'correct' if you prefer green always
+                 }
+                 explanationText.textContent = "Sai rồi! Đáp án đúng là: " + currentQuestion.options[correctAnswerIndex] + ". " + currentQuestion.explanation;
+                 explanationText.style.color = '#721c24'; // Dark Red
+             }
+
+             nextBtn.style.display = 'inline-block'; // Show the next button
+         }
+
+
+        function showNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizScreen.style.display = 'none';
+            resultsScreen.style.display = 'block';
+            resultsScreen.classList.add('fade-in');
+             backgroundMusic.pause(); // Stop music at results
+
+            const percentage = Math.round((score / shuffledQuestions.length) * 100);
+            finalScoreText.textContent = `Điểm của bạn: ${score} / ${shuffledQuestions.length} (${percentage}%)`;
+
+            let message = "";
+            if (percentage === 100) {
+                 message = "Xuất sắc! Bạn là một Cisco ISE Master thực thụ!";
+            } else if (percentage >= 80) {
+                 message = "Rất tốt! Kiến thức của bạn về ISE rất vững chắc!";
+            } else if (percentage >= 50) {
+                 message = "Khá lắm! Bạn đã nắm được những kiến thức cơ bản.";
+            } else {
+                 message = "Cần cố gắng thêm! Hãy ôn lại tài liệu và thử lại nhé.";
+            }
+            resultMessage.textContent = message;
+        }
+
+         function playSound(soundElement) {
+             // Optional: Reset playback position if the sound might be played again quickly
+             soundElement.currentTime = 0;
+             soundElement.play().catch(e => console.log("Sound play failed:", e)); // Catch potential errors
+         }
+         function toggleMusic() {
+             if (musicEnabled) {
+                 backgroundMusic.pause();
+                 musicEnabled = false;
+                 toggleMusicBtn.textContent = "Bật Nhạc Nền";
+                 toggleMusicBtn.style.backgroundColor = '#6c757d'; // Greyed out look
+             } else {
+                 backgroundMusic.play().then(() => {
+                    musicEnabled = true;
+                    toggleMusicBtn.textContent = "Tắt Nhạc Nền";
+                    toggleMusicBtn.style.backgroundColor = '#dc3545'; // Red 'on' look
+                 }).catch(e => console.log("Background music failed to play:", e));
+             }
+         }
+
+
+        // Event Listeners
+        startBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', showNextQuestion);
+        restartBtn.addEventListener('click', () => {
+            // Simply go back to start screen view
+            resultsScreen.style.display = 'none';
+             resultsScreen.classList.remove('fade-in');
+             startScreen.style.display = 'block';
+             startScreen.classList.add('fade-in');
+              setTimeout(() => startScreen.classList.remove('fade-in'), 500);
+             // Reset score/index happens in startGame when it's clicked again
+        });
+        toggleMusicBtn.addEventListener('click', toggleMusic);
+
+
+         // Optional: Preload sounds slightly for better responsiveness
+         window.addEventListener('load', () => {
+             correctSound.load();
+             incorrectSound.load();
+             backgroundMusic.load();
+         });
+
+
+    </script>
+
+</body>
+</html>
